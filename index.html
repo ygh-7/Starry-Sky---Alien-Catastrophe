@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>星际修炼 - 地球篇</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app" id="app">
+
+<!-- ==================== 创建角色 ==================== -->
+<div class="create-screen active" id="create-char">
+    <div class="create-ring-outer"></div>
+    <div class="create-ring-inner"></div>
+    <div class="create-content">
+        <div style="font-size:48px; margin-bottom:12px;">🌌</div>
+        <h1 style="color:var(--neon-cyan); margin-bottom:4px;">星际修炼</h1>
+        <p style="color:var(--text-dim); margin-bottom:8px; font-size:14px;">地球篇 · 灾变纪元</p>
+        <input type="text" id="char-name-input" class="modal-input" placeholder="请输入姓名" maxlength="8" style="max-width:280px; text-align:center;">
+        <div style="margin:8px 0; color:var(--text-dim); font-size:13px;">选择你的流派</div>
+        <div class="class-select" id="class-select">
+            <div class="class-option" id="class-warrior">
+                <div class="class-icon">⚔️</div>
+                <div class="class-name">武者</div>
+                <div class="class-desc">近战肉身<br>高拳力高防御</div>
+            </div>
+            <div class="class-option" id="class-psychic">
+                <div class="class-icon">🧠</div>
+                <div class="class-name">精神念师</div>
+                <div class="class-desc">念力操控<br>高爆发远程</div>
+            </div>
+        </div>
+        <button class="btn btn-primary" id="btn-create-char" style="max-width:280px; width:100%;">踏入武者之路</button>
+    </div>
+</div>
+
+<!-- ==================== 主游戏 ==================== -->
+<div id="main-game" style="display:none;">
+    <div class="header">
+        <div class="player-info">
+            <div>
+                <div class="player-name" id="display-name">罗峰</div>
+                <div style="font-size:12px; color:var(--text-dim); margin-top:2px;">拳力: <span id="display-power">900</span>kg | 流派: <span id="display-class">武者</span></div>
+            </div>
+            <div class="player-realm" id="display-realm">初级战士</div>
+        </div>
+        <div class="resources">
+            <div class="resource-item"><div class="resource-icon hp-icon">❤</div><span id="display-hp">100/100</span></div>
+            <div class="resource-item"><div class="resource-icon mp-icon">✦</div><span id="display-mp">50/50</span></div>
+            <div class="resource-item"><div class="resource-icon money-icon">💰</div><span id="display-money">10000</span></div>
+        </div>
+        <div class="exp-bar-container">
+            <div class="exp-label"><span>基因原能</span><span id="display-exp">0 / 150</span></div>
+            <div class="exp-bar"><div class="exp-fill" id="exp-fill" style="width:0%"></div></div>
+        </div>
+    </div>
+
+    <div class="nav">
+        <button class="nav-btn active" data-panel="cultivation">🧬 修炼</button>
+        <button class="nav-btn" data-panel="task">📋 任务</button>
+        <button class="nav-btn" data-panel="hunt">🐺 猎杀</button>
+        <button class="nav-btn" data-panel="inventory">🎒 背包</button>
+        <button class="nav-btn" data-panel="equipment">⚔️ 装备</button>
+        <button class="nav-btn" data-panel="shop">🏪 商城</button>
+        <button class="nav-btn" data-panel="workshop">🔧 工坊</button>
+        <button class="nav-btn" data-panel="settings">⚙️ 设置</button>
+    </div>
+
+    <div class="content">
+        <!-- 修炼 -->
+        <div class="panel active" id="panel-cultivation">
+            <div class="card">
+                <div class="card-title">🦾 基因原能修炼</div>
+                <div class="cultivation-display">
+                    <div class="mecha-arena" id="mecha-arena">
+                        <div class="mecha-ring-outer"></div>
+                        <div class="mecha-ring-inner"></div>
+                        <div class="mecha-flash" id="mecha-flash"></div>
+                        <div class="mecha-wave" id="mecha-wave"></div>
+                        <div class="mecha-particles" id="mecha-particles"></div>
+                        <div class="mecha-body" id="mecha-body">
+                            <img src="assets/images/mecha.png" alt="机甲">
+                        </div>
+                    </div>
+                    <div class="mecha-status-text" id="mecha-status">◈ 正在吸收宇宙能量 ◈</div>
+                    <div class="cult-exp-big" id="cult-exp-display">0 / 150</div>
+                    <div class="cultivation-rate">修炼周期: <span id="cult-rate">约5分钟/周期</span><br><span style="font-size:12px; color:var(--text-dim);">（关闭页面后自动累积离线收益）</span></div>
+                    <div style="font-size:13px; color:var(--text-dim); margin-bottom:16px;">离线收益: <span id="offline-gain" style="color:var(--neon-cyan);">0</span></div>
+                    <button class="btn btn-primary breakthrough-btn" id="btn-breakthrough">尝试突破</button>
+                    <div class="breakthrough-info" id="breakthrough-info">原能未满</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">境界信息</div>
+                <div style="font-size:13px; line-height:1.8; color:var(--text-dim);">
+                    <div>当前境界: <span id="realm-info" style="color:var(--neon-cyan);">初级战士</span></div>
+                    <div>下一境界: <span id="next-realm-info">中级战士</span></div>
+                    <div>拳力: <span id="realm-power">900</span>kg</div>
+                    <div style="margin-top:8px; font-size:12px;">💡 提示: 服用基因药剂可提升突破成功率</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 任务 -->
+        <div class="panel" id="panel-task">
+            <div class="card">
+                <div class="card-title">极限武馆任务</div>
+                <div class="task-list" id="task-list"></div>
+            </div>
+        </div>
+
+        <!-- 猎杀 -->
+        <div class="panel" id="panel-hunt">
+            <div class="card">
+                <div class="card-title">荒野区猎杀</div>
+                <div style="font-size:13px; color:var(--text-dim); margin-bottom:8px;">猎杀怪兽获取材料，首次手动战斗，通关后可自动猎杀</div>
+                <div class="task-list" id="hunt-list"></div>
+            </div>
+        </div>
+
+        <!-- 背包 -->
+        <div class="panel" id="panel-inventory">
+            <div class="card">
+                <div class="card-title">空间戒指</div>
+                <div class="inventory-grid" id="inventory-grid"></div>
+            </div>
+        </div>
+
+        <!-- 装备 -->
+        <div class="panel" id="panel-equipment">
+            <div class="card">
+                <div class="card-title">当前装备</div>
+                <div class="equip-stats">
+                    <div>拳力加成: +<span id="equip-atk-bonus">0</span>kg</div>
+                    <div>防御加成: +<span id="equip-def-bonus">0</span>%</div>
+                </div>
+                <div class="equip-slots" id="equip-slots"></div>
+            </div>
+            <div class="card">
+                <div class="card-title">背包装备</div>
+                <div style="font-size:12px; color:var(--text-dim); margin-bottom:8px;">点击装备进行穿戴</div>
+                <div class="equip-list" id="equip-list"></div>
+            </div>
+        </div>
+
+        <!-- 商城 -->
+        <div class="panel" id="panel-shop">
+            <div class="card">
+                <div class="card-title">极限武馆商城</div>
+                <div class="task-list" id="shop-list"></div>
+            </div>
+        </div>
+
+        <!-- 工坊 -->
+        <div class="panel" id="panel-workshop">
+            <div class="card">
+                <div class="card-title">🔧 材料工坊</div>
+                <div style="font-size:13px; color:var(--text-dim); margin-bottom:12px;">炼制药剂或出售怪兽材料换取星辰币</div>
+
+                <div class="card-title" style="font-size:14px; margin-top:16px;">⚗️ 炼制配方</div>
+                <div id="recipe-list"></div>
+
+                <div class="card-title" style="font-size:14px; margin-top:16px;">💰 材料出售</div>
+                <div id="material-sell-list"></div>
+                <button class="btn btn-gold" id="btn-sell-all-materials" style="width:100%; margin-top:12px;">一键出售所有材料</button>
+            </div>
+        </div>
+
+        <!-- 设置 -->
+        <div class="panel" id="panel-settings">
+            <div class="card">
+                <div class="card-title">系统设置</div>
+                <div class="settings-row"><span>导出存档</span><button class="btn" id="btn-export">📥 导出</button></div>
+                <div class="settings-row"><span>导入存档</span><button class="btn" id="btn-import">📤 导入</button></div>
+                <div class="settings-row"><span>重置游戏</span><button class="btn btn-danger" id="btn-reset">🗑️ 重置</button></div>
+                <div class="settings-row"><span>版本</span><span style="color:var(--text-dim);">v2.0 星际修炼地球篇</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== 战斗界面 ==================== -->
+<div class="battle-screen" id="battle-screen">
+    <div class="wolf-bg" id="wolf-bg"></div>
+    <div class="battle-header">
+        <div style="font-size:18px; color:var(--neon-cyan);" id="battle-title">荒野区猎杀</div>
+        <div style="font-size:12px; color:var(--text-dim); margin-top:4px;" id="battle-subtitle">兽兵级H阶 - 独角野狼</div>
+    </div>
+    <div class="battle-arena">
+        <div class="battle-entity enemy">
+            <div class="entity-avatar" id="enemy-avatar">🐺</div>
+            <div class="entity-info">
+                <div class="entity-name" id="enemy-name">独角野狼</div>
+                <div class="entity-hp-bar"><div class="entity-hp-fill" id="enemy-hp-bar" style="width:100%"></div></div>
+                <div class="entity-hp-text" id="enemy-hp-text">100 / 100</div>
+            </div>
+        </div>
+        <div class="battle-entity player">
+            <div class="entity-avatar"><img src="assets/images/player-avatar.png" style="width:50px;height:50px;object-fit:contain;filter:drop-shadow(0 0 15px rgba(0,243,255,0.8));"></div>
+            <div class="entity-info">
+                <div class="entity-name" id="player-battle-name">罗峰</div>
+                <div class="entity-hp-bar"><div class="entity-hp-fill" id="player-hp-bar" style="width:100%"></div></div>
+                <div class="entity-hp-text" id="player-hp-text">100 / 100</div>
+                <div style="margin-top:4px; font-size:12px; color:var(--neon-cyan);">念力: <span id="player-battle-mp">50</span> / <span id="player-battle-max-mp">50</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="wolf-ice-particles" id="wolf-ice-particles"></div>
+    <div class="battle-log" id="battle-log"></div>
+    <div class="battle-actions">
+        <button class="btn" id="btn-attack">👊 普通攻击</button>
+        <button class="btn" id="btn-skill">⚡ 武技/念力(20)</button>
+        <button class="btn" id="btn-defend">🛡️ 防御姿态</button>
+        <button class="btn" id="btn-item">💊 使用药剂</button>
+    </div>
+</div>
+
+<!-- ==================== 模态框 ==================== -->
+<div class="modal-overlay" id="item-modal">
+    <div class="modal">
+        <div class="modal-title">选择药剂</div>
+        <div id="usable-items-list" style="max-height:200px; overflow-y:auto;"></div>
+        <div class="modal-buttons" style="margin-top:16px;"><button class="btn" id="btn-close-item">取消</button></div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="import-modal">
+    <div class="modal">
+        <div class="modal-title">导入存档</div>
+        <textarea class="modal-input" id="import-data" rows="4" placeholder="粘贴存档数据..." style="resize:none;"></textarea>
+        <div class="modal-buttons">
+            <button class="btn" id="btn-close-import">取消</button>
+            <button class="btn btn-primary" id="btn-confirm-import">确认导入</button>
+        </div>
+    </div>
+</div>
+
+<!-- 底部日志 -->
+<div class="game-log" id="game-log"><div class="log-message">欢迎来到星际修炼地球篇，灾变纪元，怪兽横行...</div></div>
+
+
+
+<!-- 购买成功弹窗 -->
+<div id="purchase-modal" class="purchase-modal-overlay">
+    <div class="purchase-modal-card">
+        <div class="purchase-modal-close" onclick="closePurchaseModal()">&times;</div>
+        <div class="purchase-modal-icon" id="modal-icon"></div>
+        <div class="purchase-modal-text" id="modal-text"></div>
+    </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/state.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/save.js"></script>
+<script src="js/cultivation.js"></script>
+<script src="js/mecha.js"></script>
+<script src="js/task.js"></script>
+<script src="js/hunt.js"></script>
+<script src="js/battle.js"></script>
+<script src="js/inventory.js"></script>
+<script src="js/equipment.js"></script>
+<script src="js/shop.js"></script>
+<script src="js/workshop.js"></script>
+<script src="js/game.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

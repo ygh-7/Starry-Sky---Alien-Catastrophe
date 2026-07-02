@@ -62,5 +62,7 @@ const UI = {
             btn.disabled = true; btn.textContent = '原能不足';
             document.getElementById('breakthrough-info').textContent = '还需 ' + (maxExp - p.exp).toLocaleString() + ' 原能';
         }
+        Task.checkAchievement('totalMoney');
+        Task.checkAchievement('totalKill');
     }
 };

@@ -58,6 +58,7 @@ const Game = {
     showMainGame() {
         document.getElementById('create-char').classList.remove('active');
         document.getElementById('main-game').style.display = 'block';
+        Task.initDailyTasks();
         UI.updateHeader();
         Task.render(); Hunt.render(); Inventory.render(); Equipment.render(); Shop.render();
         Cultivation.startOnlineCultivation();

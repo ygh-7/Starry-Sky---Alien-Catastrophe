@@ -23,7 +23,14 @@ const Save = {
         if (STATE.equipment) {
             if (nameMap[STATE.equipment.weapon]) STATE.equipment.weapon = nameMap[STATE.equipment.weapon];
             if (nameMap[STATE.equipment.armor]) STATE.equipment.armor = nameMap[STATE.equipment.armor];
+            if (STATE.equipment.weaponLevel === undefined) STATE.equipment.weaponLevel = 0;
+            if (STATE.equipment.armorLevel === undefined) STATE.equipment.armorLevel = 0;
         }
+        // 补全新系统字段
+        if (!STATE.dailyTasks) STATE.dailyTasks = { date:"", tasks:{}, claimed:[] };
+        if (!STATE.achievements) STATE.achievements = {};
+        if (!STATE.regionsCleared) STATE.regionsCleared = [];
+        if (!STATE.totalKills) STATE.totalKills = 0;
     },
     exportSave() {
         const encoded = btoa(encodeURIComponent(JSON.stringify(STATE)));

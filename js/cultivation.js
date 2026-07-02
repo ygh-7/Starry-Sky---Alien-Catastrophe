@@ -71,6 +71,7 @@ const Cultivation = {
             STATE.player.cultivationSpeed = Math.floor(200 * Math.pow(1.15, STATE.player.realmIndex));
             UI.log('🎉 突破成功！' + CONFIG.REALMS[STATE.player.realmIndex] + '！拳力' + CONFIG.REALM_POWER[STATE.player.realmIndex].toLocaleString() + 'kg', 'success');
             UI.log('⚡ 修炼速度: ' + oldSpeed + '/h → ' + STATE.player.cultivationSpeed + '/h', 'gold');
+            Task.checkAchievement('realm');
         } else {
             STATE.player.exp = Math.floor(max * 0.5);
             UI.log('💔 突破失败，原能跌落一半！', 'danger');

@@ -168,12 +168,21 @@ const Battle = {
         STATE.player.totalExp += reward.exp;
         Inventory.addItem(reward.material, 1 + Math.floor(Math.random() * 2));
         if (!STATE.stagesCleared.includes(bs.monster.id)) STATE.stagesCleared.push(bs.monster.id);
+        STATE.totalKills++;
         STATE.player.hp = Math.min(STATE.player.hp + Math.floor(STATE.player.maxHp * 0.3), STATE.player.maxHp);
         if (!STATE.monstersKilled[bs.monster.name]) STATE.monstersKilled[bs.monster.name] = 0;
         STATE.monstersKilled[bs.monster.name]++;
-        let killLevel = bs.monster.level.includes('兽兵') ? '兽兵' : bs.monster.level.includes('兽将') ? '兽将' : '领主';
+        let killLevel = bs.monster.level.includes('兽兵') ? '兽兵' : 
+                        bs.monster.level.includes('兽将') ? '兽将' : 
+                        bs.monster.level.includes('领主') ? '领主' : 
+                        bs.monster.level.includes('王级') ? '王级' : 
+                        bs.monster.level.includes('皇级') ? '皇级' : 
+                        bs.monster.level.includes('行星') ? '行星级' : 
+                        bs.monster.level.includes('恒星') ? '恒星级' : '其他';
         Task.checkProgress('kill', 1, killLevel);
         Task.checkProgress('kill', 1, bs.monster.name);
+        const region = CONFIG.REGIONS.find(r => r.name === bs.monster.region);
+        if (region) Hunt.checkRegionClear(region.id);
         UI.log('猎杀 ' + bs.monster.name + '！获得 ' + reward.money.toLocaleString() + '💰 ' + reward.exp.toLocaleString() + '原能 ' + reward.material);
         setTimeout(() => { Battle.close(); Hunt.render(); UI.updateHeader(); Save.save(); }, 1500);
     },

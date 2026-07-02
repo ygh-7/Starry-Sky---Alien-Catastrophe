@@ -59,6 +59,7 @@ const Workshop = {
         if (Math.random() < recipe.rate) {
             Inventory.addItem(recipe.name, 1);
             UI.log('炼制成功！获得 ' + recipe.name, 'success');
+            Task.checkProgress('craft', 1);
         } else {
             UI.log('炼制失败，材料已消耗...', 'danger');
         }
@@ -74,6 +75,7 @@ const Workshop = {
         STATE.player.money += total;
         STATE.player.totalMoney += total;
         UI.log('出售 ' + count + ' 个 ' + name + '，获得 ' + total.toLocaleString() + '💰', 'gold');
+        Task.checkProgress('sell', total);
         Workshop.render(); UI.updateHeader(); Save.save();
     },
     sellAllMaterials() {
@@ -91,6 +93,7 @@ const Workshop = {
         STATE.player.money += total;
         STATE.player.totalMoney += total;
         UI.log('一键出售所有材料，获得 ' + total.toLocaleString() + '💰', 'gold');
+        Task.checkProgress('sell', total);
         Workshop.render(); UI.updateHeader(); Save.save();
     }
 };

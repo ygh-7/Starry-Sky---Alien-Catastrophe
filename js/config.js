@@ -21,7 +21,7 @@ const CONFIG = {
         "高级基因药剂": { icon:"🧪", type:"consumable", desc:"提升50%突破成功率", effect:{ breakRate:0.5 } },
         "完美基因药剂": { icon:"🧪", type:"consumable", desc:"提升80%突破成功率", effect:{ breakRate:0.8 } },
         "疗伤药剂": { icon:"💊", type:"consumable", desc:"恢复50%生命值", effect:{ heal:0.5 } },
-        "能量药剂": { icon:"⚡", type:"consumable", desc:"增加200基因原能", effect:{ exp:200 } },
+        "能量药剂": { icon:"⚡", type:"consumable", desc:"回复30点念力", effect:{ mp:30 } },
         "猩红战刃": { icon:"xinghong-zhanren.jpg", type:"weapon", desc:"SS级猩红战刃", attack:500, rarity:"SS" },
         "黑曜战甲": { icon:"heiyao-zhanjia.png", type:"armor", desc:"SS级黑曜战甲", defense:20, rarity:"SS" },
         "裂空梭": { icon:"liekong-suo.png", type:"weapon", desc:"精神念师专属兵器", attack:800, rarity:"SS" },

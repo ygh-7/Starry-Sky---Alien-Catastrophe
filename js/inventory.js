@@ -42,6 +42,10 @@ const Inventory = {
             STATE.player.hp = Math.min(STATE.player.hp + heal, STATE.player.maxHp);
             UI.log('使用 ' + name + '，恢复 ' + heal + ' 点生命！');
         }
+        if (effect.mp) {
+            STATE.player.mp = Math.min(STATE.player.mp + effect.mp, STATE.player.maxMp);
+            UI.log('使用 ' + name + '，念力 +' + effect.mp + '！');
+        }
         Inventory.addItem(name, -1);
         Inventory.render(); UI.updateHeader(); Save.save();
     }

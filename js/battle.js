@@ -120,6 +120,10 @@ const Battle = {
             battleState.playerHp = Math.min(battleState.playerHp + heal, battleState.playerMaxHp);
             Battle.log('使用 ' + name + '，恢复 ' + heal + ' 点生命！', 'heal');
         }
+        if (effect.mp) {
+            battleState.playerMp = Math.min(battleState.playerMp + effect.mp, battleState.playerMaxMp);
+            Battle.log('使用 ' + name + '，恢复 ' + effect.mp + ' 点念力！', 'heal');
+        }
         if (effect.exp) { Battle.log(name + ' 战斗中无法使用！', 'system'); return; }
         Inventory.addItem(name, -1);
         Inventory.render(); Battle.updateUI();

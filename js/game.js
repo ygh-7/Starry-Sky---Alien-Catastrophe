@@ -11,7 +11,14 @@ const Game = {
             document.getElementById('create-char').classList.add('active');
         }
         Cultivation.startOnlineCultivation();
+        Multiplayer.init();
+        MultiplayerUI.init();
+        Game.showMqttTip();
         Game.bindEvents();
+    },
+    showMqttTip() {
+        const tip = document.getElementById('mp-mqtt-tip');
+        if (tip) tip.style.display = mqttAvailable() ? 'none' : 'block';
     },
     bindEvents() {
         // 导航按钮

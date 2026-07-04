@@ -3,6 +3,10 @@
 // ============================================================
 
 const Battle = {
+    isMultiplayer: false,
+    mpRoom: null,
+    mpRewardClaimed: false,
+
     start(monster) {
         battleState = {
             monster: monster,
@@ -200,5 +204,159 @@ const Battle = {
         document.getElementById('battle-log').innerHTML = '';
         document.getElementById('wolf-bg').classList.remove('active');
         battleState = null;
+    },
+
+    // ============================================================
+    //  多人战斗支持
+    // ============================================================
+    startMultiplayer(room) {
+        this.isMultiplayer = true;
+        this.mpRoom = room;
+        this.mpRewardClaimed = false;
+        const boss = room.boss;
+
+        document.getElementById('battle-title').textContent = '组队讨伐 · ' + boss.region;
+        document.getElementById('battle-subtitle').textContent = boss.level + ' - ' + boss.name;
+        document.getElementById('enemy-name').textContent = boss.name;
+
+        const avatarEl = document.getElementById('enemy-avatar');
+        if (boss.id === 1) {
+            avatarEl.innerHTML = '<img src="assets/images/' + CONFIG.WOLF_IMG + '" style="width:50px;height:50px;object-fit:contain;filter:drop-shadow(0 0 15px rgba(0,200,255,0.8));animation:wolfBreath 2s ease-in-out infinite;">';
+            avatarEl.style.borderColor = '#0099ff';
+            avatarEl.classList.add('wolf-avatar');
+        } else {
+            avatarEl.textContent = boss.icon;
+            avatarEl.style.borderColor = 'var(--neon-pink)';
+            avatarEl.classList.remove('wolf-avatar');
+        }
+
+        document.getElementById('player-battle-name').textContent = STATE.player.name;
+        document.getElementById('battle-screen').classList.add('active');
+        document.getElementById('battle-log').innerHTML = '';
+
+        const wolfBg = document.getElementById('wolf-bg');
+        if (boss.id === 1) {
+            wolfBg.style.backgroundImage = 'url(assets/images/' + CONFIG.WOLF_IMG + ')';
+            wolfBg.classList.add('active');
+        } else {
+            wolfBg.classList.remove('active');
+        }
+
+        // 切换底部按钮为多人版
+        document.getElementById('battle-actions-normal').style.display = 'none';
+        document.getElementById('battle-actions-multiplayer').style.display = 'grid';
+        document.getElementById('mp-members-area').style.display = 'block';
+
+        this.updateMultiplayerUI(room);
+        this.renderMultiplayerLog(room.battleLog);
+    },
+
+    updateMultiplayerUI(room) {
+        if (!this.isMultiplayer || !room) return;
+        const boss = room.boss;
+        document.getElementById('enemy-hp-bar').style.width = (boss.hp / boss.maxHp * 100) + '%';
+        document.getElementById('enemy-hp-text').textContent = boss.hp + ' / ' + boss.maxHp;
+
+        const me = room.members[Multiplayer.playerKey(STATE.player.name)];
+        if (me) {
+            document.getElementById('player-hp-bar').style.width = (me.hp / me.maxHp * 100) + '%';
+            document.getElementById('player-hp-text').textContent = me.hp + ' / ' + me.maxHp;
+            document.getElementById('player-battle-mp').textContent = me.mp;
+            document.getElementById('player-battle-max-mp').textContent = me.maxMp;
+        }
+
+        // 渲染队友
+        const area = document.getElementById('mp-members-area');
+        if (area) {
+            area.innerHTML = '';
+            Object.values(room.members || {}).forEach(m => {
+                const isMe = m.name === STATE.player.name;
+                const div = document.createElement('div');
+                div.className = 'mp-member-battle' + (m.hp <= 0 ? ' dead' : '') + (isMe ? ' me' : '');
+                div.innerHTML = '<div class="mp-member-battle-name">' + (isMe ? '我' : m.name) + '</div><div class="mp-member-battle-bar"><div class="mp-member-battle-fill" style="width:' + (m.hp / m.maxHp * 100) + '%"></div></div><div class="mp-member-battle-hp">' + m.hp + '/' + m.maxHp + ' MP:' + m.mp + '</div>';
+                area.appendChild(div);
+            });
+        }
+
+        // 禁用阵亡玩家按钮
+        const meAlive = me && me.hp > 0;
+        ['btn-mp-attack', 'btn-mp-skill', 'btn-mp-defend', 'btn-mp-item'].forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) btn.disabled = !meAlive || room.status === 'finished';
+        });
+
+        // 显示结算提示
+        if (room.status === 'finished') {
+            const closeBtn = document.getElementById('btn-mp-close');
+            if (closeBtn) closeBtn.style.display = 'inline-block';
+        }
+    },
+
+    renderMultiplayerLog(logs) {
+        if (!logs) return;
+        const logDiv = document.getElementById('battle-log');
+        logDiv.innerHTML = '';
+        Object.values(logs).sort((a, b) => (a.time || 0) - (b.time || 0)).forEach(entry => {
+            this.log(entry.message, entry.type);
+        });
+        logDiv.scrollTop = logDiv.scrollHeight;
+    },
+
+    appendMultiplayerLog(entry) {
+        this.log(entry.message, entry.type);
+    },
+
+    handleMultiplayerEnd(room) {
+        if (this.mpRewardClaimed) return;
+        // 防止刷新页面后重复领取同一房间奖励
+        const claimKey = 'mp_reward_' + (Multiplayer.currentRoomId || '');
+        if (claimKey && localStorage.getItem(claimKey)) return;
+        this.mpRewardClaimed = true;
+        if (claimKey) localStorage.setItem(claimKey, '1');
+
+        const boss = room.boss;
+        const monster = CONFIG.MONSTERS.find(m => m.id === boss.id);
+        const reward = monster ? monster.reward : { money: 0, exp: 0, material: '兽兵材料' };
+        const members = Object.values(room.members || {});
+        const alive = members.filter(m => m.hp > 0).length;
+        const isVictory = alive > 0 && boss.hp <= 0;
+
+        if (isVictory) {
+            // 奖励 = 基础奖励 × 人数 × 2
+            const scale = members.length * 2;
+            const money = reward.money * scale;
+            const exp = reward.exp * scale;
+            const materialCount = (1 + Math.floor(Math.random() * 2)) * members.length;
+
+            STATE.player.money += money;
+            STATE.player.totalMoney += money;
+            STATE.player.exp = Math.min(STATE.player.exp + exp, CONFIG.REALM_EXP[STATE.player.realmIndex]);
+            STATE.player.totalExp += exp;
+            Inventory.addItem(reward.material, materialCount);
+            STATE.player.hp = Math.min(STATE.player.hp + Math.floor(STATE.player.maxHp * 0.3), STATE.player.maxHp);
+            STATE.totalKills++;
+            if (!STATE.monstersKilled[boss.name]) STATE.monstersKilled[boss.name] = 0;
+            STATE.monstersKilled[boss.name]++;
+
+            UI.log('组队讨伐 ' + boss.name + ' 胜利！获得 ' + money.toLocaleString() + '💰 ' + exp.toLocaleString() + '原能 ' + reward.material + 'x' + materialCount, 'success');
+            this.log('🎉 你获得了 ' + money.toLocaleString() + '💰 ' + exp.toLocaleString() + '原能 ' + reward.material + 'x' + materialCount, 'system');
+        } else {
+            STATE.player.hp = 1;
+            STATE.player.mp = Math.floor(STATE.player.maxMp / 2);
+            UI.log('组队讨伐 ' + boss.name + ' 失败...', 'danger');
+        }
+
+        UI.updateHeader();
+        Save.save();
+    },
+
+    closeMultiplayer() {
+        this.isMultiplayer = false;
+        this.mpRoom = null;
+        document.getElementById('battle-actions-normal').style.display = 'grid';
+        document.getElementById('battle-actions-multiplayer').style.display = 'none';
+        document.getElementById('mp-members-area').style.display = 'none';
+        document.getElementById('btn-mp-close').style.display = 'none';
+        this.close();
     }
 };

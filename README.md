@@ -10,27 +10,30 @@
 
 ```
 .
-├── index.html          # 入口页面
+├── index.html              # 入口页面
 ├── css/
-│   └── style.css       # 全部样式
+│   └── style.css           # 全部样式
 ├── js/
-│   ├── config.js       # 游戏配置（境界、物品、怪物、任务、配方、商店）
-│   ├── state.js        # 全局状态
-│   ├── ui.js           # 界面渲染与面板切换
-│   ├── save.js         # 存档导入/导出/重置
-│   ├── cultivation.js  # 修炼与突破
-│   ├── mecha.js        # 机甲动画特效
-│   ├── task.js         # 主线任务、每日任务、成就
-│   ├── hunt.js         # 区域猎杀与自动猎杀
-│   ├── battle.js       # 手动战斗
-│   ├── inventory.js    # 背包系统
-│   ├── equipment.js    # 装备系统与强化
-│   ├── shop.js         # 商城系统
-│   ├── workshop.js     # 材料工坊（炼制 + 出售）
-│   ├── game.js         # 游戏初始化与角色创建
-│   └── main.js         # 启动入口与全局事件
+│   ├── config.js           # 游戏配置（境界、物品、怪物、任务、配方、商店）
+│   ├── state.js            # 全局状态
+│   ├── ui.js               # 界面渲染与面板切换
+│   ├── save.js             # 存档导入/导出/重置
+│   ├── cultivation.js      # 修炼与突破
+│   ├── mecha.js            # 机甲动画特效
+│   ├── task.js             # 主线任务、每日任务、成就
+│   ├── hunt.js             # 区域猎杀与自动猎杀
+│   ├── battle.js           # 手动战斗 + 多人 BOSS 战
+│   ├── inventory.js        # 背包系统
+│   ├── equipment.js        # 装备系统与强化
+│   ├── shop.js             # 商城系统
+│   ├── workshop.js         # 材料工坊（炼制 + 出售）
+│   ├── mqtt-config.js      # MQTT 配置（联机用）
+│   ├── multiplayer.js      # 联机核心（房间、同步、战斗）
+│   ├── multiplayer-ui.js   # 联机界面
+│   ├── game.js             # 游戏初始化与角色创建
+│   └── main.js             # 启动入口与全局事件
 └── assets/
-    └── images/         # 图片资源
+    └── images/             # 图片资源
 ```
 
 ## 本地运行
@@ -101,9 +104,44 @@ python -m http.server 8000
 
 一次性奖励，包含境界突破、区域通关、累计击杀、累计财富、装备强化等目标。
 
+## 联机玩法（4 人组队 BOSS 战）
+
+游戏支持最多 4 人实时组队讨伐 BOSS：
+
+1. 点击底部导航「🌐 联机」进入组队大厅。
+2. 选择讨伐目标并「创建房间」，将 6 位房间号分享给好友。
+3. 好友输入房间号「加入房间」。
+4. 全员点击「准备」后，房主点击「开始战斗」。
+5. 进入战斗界面，普通攻击、技能、防御、嗑药都会实时同步给所有队友。
+6. BOSS 每 3 秒自动攻击一名玩家，由房主客户端计算并同步。
+7. 战斗胜利后全员获得丰厚奖励（金钱、原能、材料）。
+
+### 启用联机
+
+联机基于 **MQTT 公共代理**实现，**无需注册任何账号**，国内可直接访问。
+
+1. 默认使用 EMQ X 国内节点，配置在 `js/mqtt-config.js` 中：
+
+```javascript
+const MQTT_CONFIG = {
+    brokerURL: 'wss://broker-cn.emqx.io:8084/mqtt',
+    topicPrefix: 'star_cultivation'
+};
+```
+
+2. 如果默认代理连接不上，可尝试以下备用地址（修改 `brokerURL` 即可）：
+   - `wss://broker.emqx.io:8084/mqtt`（国际节点）
+   - `wss://broker.hivemq.com:8884/mqtt`（HiveMQ）
+
+3. MQTT 库通过 jsDelivr 加载，国内访问通常稳定。如果加载失败，可手动把 `index.html` 里的 MQTT SDK 地址换成其他可用 CDN。
+4. 刷新页面，MQTT 库加载成功后「联机」面板不再显示黄色提示。
+
+> 这是一个纯前端 P2P（房主权威）方案：房主创建房间后，所有玩家通过 MQTT 主题收发消息，房主负责计算 BOSS 攻击和同步完整房间状态。房主掉线后房间会解散。
+
 ## 技术说明
 
-- 纯静态网页，无后端、无数据库。
+- 纯静态网页，无后端、无数据库（单机模式下）。
 - 使用原生 HTML/CSS/JavaScript，无框架依赖。
 - 图片资源独立存放，避免单文件体积过大。
 - 所有 JS 模块通过普通 `<script>` 标签按顺序加载。
+- 联机功能使用 MQTT 公共代理作为消息中转层。

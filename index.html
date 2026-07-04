@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>星际修炼 - 地球篇</title>
 <link rel="stylesheet" href="css/style.css">
+<!-- MQTT（jsDelivr 在国内访问更稳定） -->
+<script src="https://cdn.jsdelivr.net/npm/mqtt@5.0.3/dist/mqtt.min.js"></script>
 </head>
 <body>
 
@@ -65,6 +67,7 @@
         <button class="nav-btn" data-panel="equipment">⚔️ 装备</button>
         <button class="nav-btn" data-panel="shop">🏪 商城</button>
         <button class="nav-btn" data-panel="workshop">🔧 工坊</button>
+        <button class="nav-btn" data-panel="multiplayer">🌐 联机</button>
         <button class="nav-btn" data-panel="settings">⚙️ 设置</button>
     </div>
 
@@ -163,6 +166,50 @@
             </div>
         </div>
 
+        <!-- 联机 -->
+        <div class="panel" id="panel-multiplayer">
+            <div class="card" id="mp-lobby">
+                <div class="card-title">🌐 组队大厅</div>
+                <div style="font-size:13px; color:var(--text-dim); margin-bottom:12px;">最多 4 人一起讨伐 BOSS</div>
+                <div style="margin-bottom:12px;">
+                    <div style="font-size:12px; color:var(--text-dim); margin-bottom:6px;">选择讨伐目标</div>
+                    <select id="mp-boss-select" class="modal-input" style="margin-bottom:0;"></select>
+                </div>
+                <button class="btn btn-primary" id="btn-create-room" style="width:100%; margin-bottom:12px;">创建房间</button>
+                <div style="border-top:1px solid rgba(0,243,255,0.1); padding-top:16px; margin-top:16px;">
+                    <div style="font-size:12px; color:var(--text-dim); margin-bottom:6px;">输入房间号加入</div>
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="mp-room-code" class="modal-input" placeholder="如 ABC123" maxlength="6" style="flex:1; margin-bottom:0; text-transform:uppercase;">
+                        <button class="btn btn-success" id="btn-join-room">加入</button>
+                    </div>
+                </div>
+                <div id="mp-mqtt-tip" style="margin-top:16px; padding:12px; background:rgba(255,215,0,0.05); border:1px solid rgba(255,215,0,0.2); border-radius:8px; font-size:12px; color:var(--neon-gold); display:none;">
+                    ⚠️ 联机需要 MQTT 支持。如果本提示一直显示，说明 MQTT 库加载失败，请检查网络能否访问 cdn.jsdelivr.net。
+                </div>
+            </div>
+
+            <div class="card" id="mp-room" style="display:none;">
+                <div class="card-title">🏠 房间 <span id="mp-room-code-display" style="color:var(--neon-gold);"></span></div>
+                <div style="font-size:13px; color:var(--text-dim); margin-bottom:12px;">目标：<span id="mp-room-boss" style="color:var(--neon-cyan);"></span></div>
+
+                <div class="card-title" style="font-size:14px;">成员列表</div>
+                <div id="mp-member-list" style="margin-bottom:14px;"></div>
+
+                <div style="display:flex; gap:10px; margin-bottom:14px;">
+                    <button class="btn btn-success" id="btn-ready">准备</button>
+                    <button class="btn btn-primary" id="btn-start-battle">开始战斗</button>
+                    <button class="btn btn-danger" id="btn-leave-room" style="margin-left:auto;">离开</button>
+                </div>
+
+                <div class="card-title" style="font-size:14px; margin-top:16px;">💬 房间聊天</div>
+                <div id="mp-chat-box" class="mp-chat-box"></div>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <input type="text" id="mp-chat-input" class="modal-input" placeholder="输入消息..." style="flex:1; margin-bottom:0;">
+                    <button class="btn btn-sm" id="btn-send-chat">发送</button>
+                </div>
+            </div>
+        </div>
+
         <!-- 设置 -->
         <div class="panel" id="panel-settings">
             <div class="card">
@@ -192,6 +239,10 @@
                 <div class="entity-hp-text" id="enemy-hp-text">100 / 100</div>
             </div>
         </div>
+
+        <!-- 多人队友血条 -->
+        <div id="mp-members-area" class="mp-members-area" style="display:none;"></div>
+
         <div class="battle-entity player">
             <div class="entity-avatar"><img src="assets/images/player-avatar.png" style="width:50px;height:50px;object-fit:contain;filter:drop-shadow(0 0 15px rgba(0,243,255,0.8));"></div>
             <div class="entity-info">
@@ -204,11 +255,21 @@
     </div>
     <div class="wolf-ice-particles" id="wolf-ice-particles"></div>
     <div class="battle-log" id="battle-log"></div>
-    <div class="battle-actions">
+    <!-- 单人战斗按钮 -->
+    <div class="battle-actions" id="battle-actions-normal">
         <button class="btn" id="btn-attack">👊 普通攻击</button>
         <button class="btn" id="btn-skill">⚡ 武技/念力(20)</button>
         <button class="btn" id="btn-defend">🛡️ 防御姿态</button>
         <button class="btn" id="btn-item">💊 使用药剂</button>
+    </div>
+
+    <!-- 多人战斗按钮 -->
+    <div class="battle-actions" id="battle-actions-multiplayer" style="display:none;">
+        <button class="btn" id="btn-mp-attack">👊 普通攻击</button>
+        <button class="btn" id="btn-mp-skill">⚡ 武技/念力(20)</button>
+        <button class="btn" id="btn-mp-defend">🛡️ 防御姿态</button>
+        <button class="btn" id="btn-mp-item">💊 使用药剂</button>
+        <button class="btn btn-primary" id="btn-mp-close" style="grid-column:1 / -1; display:none;">结束并返回</button>
     </div>
 </div>
 
@@ -237,6 +298,15 @@
 
 
 
+<!-- 多人战斗药剂选择 -->
+<div class="modal-overlay" id="mp-item-modal">
+    <div class="modal">
+        <div class="modal-title">选择药剂</div>
+        <div id="mp-usable-items-list" style="max-height:200px; overflow-y:auto;"></div>
+        <div class="modal-buttons" style="margin-top:16px;"><button class="btn" id="btn-close-mp-item">取消</button></div>
+    </div>
+</div>
+
 <!-- 购买成功弹窗 -->
 <div id="purchase-modal" class="purchase-modal-overlay">
     <div class="purchase-modal-card">
@@ -259,6 +329,9 @@
 <script src="js/equipment.js"></script>
 <script src="js/shop.js"></script>
 <script src="js/workshop.js"></script>
+<script src="js/mqtt-config.js"></script>
+<script src="js/multiplayer.js"></script>
+<script src="js/multiplayer-ui.js"></script>
 <script src="js/game.js"></script>
 <script src="js/main.js"></script>
 </body>

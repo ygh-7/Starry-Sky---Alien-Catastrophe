@@ -378,3 +378,137 @@ body::before {
     transition: color 0.3s;
 }
 .purchase-modal-close:hover { color: var(--neon-cyan); }
+/* ===== 联机 ===== */
+#mp-lobby .modal-input {
+    margin-bottom: 12px;
+}
+
+#mp-member-list {
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.mp-member-item {
+    background: rgba(10,25,50,0.6);
+    border: 1px solid rgba(0,243,255,0.15);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s;
+}
+
+.mp-member-item:hover {
+    border-color: rgba(0,243,255,0.4);
+}
+
+.mp-member-name {
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.mp-member-info {
+    font-size: 12px;
+    color: var(--text-dim);
+}
+
+.mp-member-status {
+    font-size: 12px;
+    color: var(--text-dim);
+    white-space: nowrap;
+}
+
+.mp-member-status.ready {
+    color: var(--neon-green);
+    text-shadow: 0 0 8px rgba(5,255,161,0.3);
+}
+
+.mp-chat-box {
+    height: 120px;
+    overflow-y: auto;
+    background: rgba(10,20,40,0.7);
+    border: 1px solid rgba(0,243,255,0.2);
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 12px;
+}
+
+.mp-chat-item {
+    margin-bottom: 6px;
+    line-height: 1.4;
+}
+
+.mp-chat-player {
+    color: var(--neon-cyan);
+    font-weight: bold;
+}
+
+.mp-chat-msg {
+    color: var(--text-primary);
+    word-break: break-all;
+}
+
+.mp-members-area {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin: 10px 0;
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+.mp-member-battle {
+    background: rgba(10,25,50,0.7);
+    border: 1px solid rgba(0,243,255,0.2);
+    border-radius: 8px;
+    padding: 8px;
+    font-size: 11px;
+}
+
+.mp-member-battle.me {
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 10px rgba(0,243,255,0.15);
+}
+
+.mp-member-battle.dead {
+    opacity: 0.5;
+    border-color: var(--neon-pink);
+}
+
+.mp-member-battle-name {
+    font-weight: bold;
+    margin-bottom: 4px;
+    color: var(--neon-cyan);
+}
+
+.mp-member-battle-bar {
+    height: 6px;
+    background: rgba(0,20,40,0.8);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.mp-member-battle-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--neon-green), #00ff88);
+    transition: width 0.3s ease;
+}
+
+.mp-member-battle.dead .mp-member-battle-fill {
+    background: var(--neon-pink);
+}
+
+#battle-actions-multiplayer {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+#mp-firebase-tip code {
+    background: rgba(255,215,0,0.1);
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-family: monospace;
+}

@@ -14,6 +14,7 @@ const UI = {
         if (name === 'equipment') Equipment.render();
         if (name === 'shop') Shop.render();
         if (name === 'workshop') Workshop.render();
+        if (name === 'multiplayer') MultiplayerUI.showLobby();
     },
     showModal(id) { document.getElementById(id).classList.add('active'); },
     closeModal(id) { document.getElementById(id).classList.remove('active'); },

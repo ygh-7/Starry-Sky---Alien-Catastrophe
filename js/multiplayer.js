@@ -4,50 +4,105 @@
 
 const Multiplayer = {
     client: null,
+    currentBrokerIndex: 0,
     currentRoomId: null,
     isHost: false,
     roomState: null,
     bossAttackTimer: null,
     onRoomUpdateCallback: null,
+    onConnectionChangeCallback: null,
     connected: false,
+    connecting: false,
 
     init() {
         if (!mqttAvailable()) {
             console.warn('[Multiplayer] MQTT 库未加载，联机功能不可用。');
+            this.notifyConnectionChange(false, 'MQTT 库未加载');
             return;
         }
         this.connect();
     },
 
     connect() {
-        if (this.client) return;
+        if (this.connecting || this.client) return;
+        if (this.currentBrokerIndex >= MQTT_CONFIG.brokerURLs.length) {
+            this.currentBrokerIndex = 0;
+            this.notifyConnectionChange(false, '所有 MQTT 代理都连接失败，请检查网络');
+            setTimeout(() => this.connect(), 5000);
+            return;
+        }
+
+        const brokerURL = MQTT_CONFIG.brokerURLs[this.currentBrokerIndex];
+        this.connecting = true;
+        this.notifyConnectionChange(false, '正在连接 ' + brokerURL + '...');
+        console.log('[Multiplayer] 尝试连接 MQTT:', brokerURL);
+
         const clientId = 'sc_' + Math.random().toString(36).substr(2, 8) + '_' + Date.now().toString(36);
-        this.client = mqtt.connect(MQTT_CONFIG.brokerURL, {
+        this.client = mqtt.connect(brokerURL, {
             clientId: clientId,
             clean: true,
             connectTimeout: 5000,
-            reconnectPeriod: 3000,
+            reconnectPeriod: 0, // 我们自己控制重连
             rejectUnauthorized: false
         });
 
         this.client.on('connect', () => {
-            console.log('[Multiplayer] MQTT 已连接');
+            console.log('[Multiplayer] MQTT 已连接:', brokerURL);
             this.connected = true;
-        });
-
-        this.client.on('disconnect', () => {
-            console.log('[Multiplayer] MQTT 断开');
-            this.connected = false;
+            this.connecting = false;
+            this.notifyConnectionChange(true, '已连接 ' + brokerURL);
         });
 
         this.client.on('error', (err) => {
             console.error('[Multiplayer] MQTT 错误:', err);
-            UI.log('联机连接失败，请检查网络或更换 MQTT 代理', 'danger');
+        });
+
+        this.client.on('offline', () => {
+            console.log('[Multiplayer] MQTT 离线');
+            this.connected = false;
+            this.connecting = false;
+        });
+
+        this.client.on('close', () => {
+            if (this.connected) {
+                console.log('[Multiplayer] MQTT 连接关闭');
+                this.connected = false;
+                this.connecting = false;
+                this.notifyConnectionChange(false, '连接已断开，正在切换代理...');
+                this.cleanupClient();
+                this.currentBrokerIndex++;
+                setTimeout(() => this.connect(), 1000);
+            }
         });
 
         this.client.on('message', (topic, payload) => {
             this.handleMessage(topic, payload);
         });
+
+        // 5 秒超时未连上则换下一个代理
+        setTimeout(() => {
+            if (!this.connected && this.connecting) {
+                console.warn('[Multiplayer] 连接超时，切换代理');
+                this.connecting = false;
+                this.cleanupClient();
+                this.currentBrokerIndex++;
+                this.connect();
+            }
+        }, 5000);
+    },
+
+    cleanupClient() {
+        if (!this.client) return;
+        try { this.client.end(true); } catch (e) {}
+        this.client = null;
+    },
+
+    notifyConnectionChange(connected, message) {
+        if (this.onConnectionChangeCallback) this.onConnectionChangeCallback(connected, message);
+    },
+
+    onConnectionChange(callback) {
+        this.onConnectionChangeCallback = callback;
     },
 
     // ---------- 工具 ----------
@@ -91,7 +146,7 @@ const Multiplayer = {
 
     // ---------- 房间操作 ----------
     async createRoom(bossId) {
-        if (!mqttAvailable()) { UI.log('MQTT 未加载，无法创建房间', 'danger'); return null; }
+        if (!this.connected) { UI.log('MQTT 尚未连接，请稍后再试', 'danger'); return null; }
         if (this.currentRoomId) { UI.log('你已在房间中', 'danger'); return null; }
 
         const roomId = this.generateRoomId();
@@ -126,8 +181,14 @@ const Multiplayer = {
 
         this.currentRoomId = roomId;
         this.isHost = true;
+        UI.log('正在创建房间...', 'success');
+
         this.client.subscribe(this.topic(roomId), { qos: 1 }, (err) => {
-            if (err) { UI.log('订阅房间失败', 'danger'); return; }
+            if (err) {
+                this.resetRoom();
+                UI.log('订阅房间失败', 'danger');
+                return;
+            }
             this.publishState();
             if (this.onRoomUpdateCallback) this.onRoomUpdateCallback(this.roomState);
             UI.log('房间创建成功：' + roomId, 'success');
@@ -136,23 +197,23 @@ const Multiplayer = {
     },
 
     async joinRoom(roomId) {
-        if (!mqttAvailable()) { UI.log('MQTT 未加载，无法加入房间', 'danger'); return false; }
+        if (!this.connected) { UI.log('MQTT 尚未连接，请稍后再试', 'danger'); return false; }
         if (this.currentRoomId) { UI.log('你已在房间中', 'danger'); return false; }
         roomId = roomId.trim().toUpperCase();
         if (!roomId) { UI.log('请输入房间号', 'danger'); return false; }
 
         this.currentRoomId = roomId;
         this.isHost = false;
+        UI.log('正在加入房间 ' + roomId + '...', 'success');
+
         this.client.subscribe(this.topic(roomId), { qos: 1 }, (err) => {
             if (err) {
                 this.currentRoomId = null;
                 UI.log('加入房间失败', 'danger');
                 return;
             }
-            // 发送加入请求（由房主处理并更新状态）
             const player = this.getPlayerSnapshot();
             this.publish({ type: 'join', player: player });
-            UI.log('正在加入房间：' + roomId + '...', 'success');
         });
         return true;
     },
@@ -162,7 +223,6 @@ const Multiplayer = {
         const roomId = this.currentRoomId;
 
         if (this.isHost) {
-            // 房主离开：清空保留状态
             this.stopBossAttackTimer();
             this.client.publish(this.topic(roomId), '', { qos: 1, retain: true });
         } else {
@@ -170,11 +230,15 @@ const Multiplayer = {
         }
 
         this.client.unsubscribe(this.topic(roomId));
+        this.resetRoom();
+        UI.log('已离开房间', 'success');
+    },
+
+    resetRoom() {
         this.currentRoomId = null;
         this.isHost = false;
         this.roomState = null;
         this.stopBossAttackTimer();
-        UI.log('已离开房间', 'success');
     },
 
     async setReady(ready) {
@@ -218,11 +282,7 @@ const Multiplayer = {
 
     handleMessage(topic, payload) {
         if (!payload || payload.length === 0) {
-            // 清空保留消息，表示房间关闭
-            this.currentRoomId = null;
-            this.isHost = false;
-            this.roomState = null;
-            this.stopBossAttackTimer();
+            this.resetRoom();
             if (this.onRoomUpdateCallback) this.onRoomUpdateCallback(null);
             return;
         }
@@ -266,6 +326,7 @@ const Multiplayer = {
         const members = this.roomState.members || {};
         if (Object.keys(members).length >= 4) return;
         const key = this.playerKey(player.name);
+        if (members[key]) return; // 已存在同名玩家
         members[key] = player;
         this.roomState.members = members;
         this.pushBattleLog('system', player.name + ' 加入了房间');
@@ -279,12 +340,8 @@ const Multiplayer = {
             delete this.roomState.members[key];
             this.pushBattleLog('system', playerName + ' 离开了房间');
             if (Object.keys(this.roomState.members).length === 0) {
-                // 没人了，清空保留状态
                 this.client.publish(this.topic(this.currentRoomId), '', { qos: 1, retain: true });
-                this.currentRoomId = null;
-                this.isHost = false;
-                this.roomState = null;
-                this.stopBossAttackTimer();
+                this.resetRoom();
             } else {
                 this.publishState();
             }
@@ -304,6 +361,8 @@ const Multiplayer = {
         if (!this.roomState) return;
         this.roomState.chat.push({ player: msg.player, message: msg.message, time: Date.now() });
         this.publishState();
+        // 房主自己也要更新 UI
+        if (this.onRoomUpdateCallback) this.onRoomUpdateCallback(this.roomState);
     },
 
     // ---------- 战斗动作 ----------

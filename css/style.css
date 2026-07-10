@@ -451,6 +451,10 @@ body::before {
     word-break: break-all;
 }
 
+.mp-chat-item.local {
+    opacity: 0.7;
+}
+
 .mp-members-area {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -511,4 +515,27 @@ body::before {
     padding: 2px 5px;
     border-radius: 4px;
     font-family: monospace;
+}
+
+/* ===== MQTT 连接状态 ===== */
+.mp-connection-status {
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    text-align: center;
+    background: rgba(255,215,0,0.05);
+    border: 1px solid rgba(255,215,0,0.2);
+    color: var(--neon-gold);
+}
+
+.mp-connection-status.connected {
+    background: rgba(5,255,161,0.05);
+    border-color: rgba(5,255,161,0.2);
+    color: var(--neon-green);
+}
+
+.mp-connection-status.disconnected {
+    background: rgba(255,42,109,0.05);
+    border-color: rgba(255,42,109,0.2);
+    color: var(--neon-pink);
 }

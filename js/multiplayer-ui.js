@@ -9,6 +9,8 @@ const MultiplayerUI = {
     init() {
         this.bindEvents();
         Multiplayer.onRoomUpdate((room) => this.onRoomUpdate(room));
+        Multiplayer.onConnectionChange((connected, message) => this.onConnectionChange(connected, message));
+        this.updateConnectionStatus(false, '正在初始化...');
     },
 
     bindEvents() {
@@ -68,8 +70,20 @@ const MultiplayerUI = {
         if (!input) return;
         const msg = input.value.trim();
         if (!msg) return;
+        // 本地立即显示，提升反馈感
+        this.appendLocalChat(STATE.player.name, msg);
         Multiplayer.sendChat(msg);
         input.value = '';
+    },
+
+    appendLocalChat(player, message) {
+        const box = document.getElementById('mp-chat-box');
+        if (!box) return;
+        const div = document.createElement('div');
+        div.className = 'mp-chat-item local';
+        div.innerHTML = '<span class="mp-chat-player">' + player + ':</span> <span class="mp-chat-msg">' + this.escapeHtml(message) + '</span>';
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
     },
 
     mpAction(action, data) {
@@ -96,6 +110,22 @@ const MultiplayerUI = {
         UI.showModal('mp-item-modal');
     },
 
+    onConnectionChange(connected, message) {
+        this.updateConnectionStatus(connected, message);
+    },
+
+    updateConnectionStatus(connected, message) {
+        const statusEl = document.getElementById('mp-connection-status');
+        if (statusEl) {
+            statusEl.textContent = message;
+            statusEl.className = 'mp-connection-status ' + (connected ? 'connected' : 'disconnected');
+        }
+        const createBtn = document.getElementById('btn-create-room');
+        const joinBtn = document.getElementById('btn-join-room');
+        if (createBtn) createBtn.disabled = !connected;
+        if (joinBtn) joinBtn.disabled = !connected;
+    },
+
     onRoomUpdate(room) {
         this.currentRoom = room;
         if (!room) {
@@ -107,9 +137,11 @@ const MultiplayerUI = {
         } else if (room.status === 'fighting') {
             this.renderBattle(room);
             this.appendNewLogs(room.battleLog);
+            this.renderChat(room.chat);
         } else if (room.status === 'finished') {
             this.renderFinished(room);
             this.appendNewLogs(room.battleLog);
+            this.renderChat(room.chat);
         }
     },
 
@@ -136,14 +168,16 @@ const MultiplayerUI = {
 
     // ---------- 大厅 ----------
     showLobby() {
-        // 如果已经在房间里，继续显示房间界面
         if (Multiplayer.currentRoomId && this.currentRoom) {
             this.renderRoom(this.currentRoom);
             return;
         }
-        document.getElementById('mp-lobby') && (document.getElementById('mp-lobby').style.display = 'block');
-        document.getElementById('mp-room') && (document.getElementById('mp-room').style.display = 'none');
-        document.getElementById('mp-boss-select').innerHTML = this.buildBossOptions();
+        const lobby = document.getElementById('mp-lobby');
+        const room = document.getElementById('mp-room');
+        if (lobby) lobby.style.display = 'block';
+        if (room) room.style.display = 'none';
+        const bossSelect = document.getElementById('mp-boss-select');
+        if (bossSelect) bossSelect.innerHTML = this.buildBossOptions();
         this.currentRoom = null;
         this.rewardClaimed = false;
         this.lastLogKeys = null;
@@ -159,11 +193,13 @@ const MultiplayerUI = {
 
     // ---------- 房间内 ----------
     renderRoom(room) {
-        document.getElementById('mp-lobby') && (document.getElementById('mp-lobby').style.display = 'none');
-        document.getElementById('mp-room') && (document.getElementById('mp-room').style.display = 'block');
+        const lobby = document.getElementById('mp-lobby');
+        const roomPanel = document.getElementById('mp-room');
+        if (lobby) lobby.style.display = 'none';
+        if (roomPanel) roomPanel.style.display = 'block';
 
         const roomCodeEl = document.getElementById('mp-room-code-display');
-        if (roomCodeEl) roomCodeEl.textContent = Multiplayer.currentRoomId;
+        if (roomCodeEl) roomCodeEl.textContent = Multiplayer.currentRoomId || '';
 
         const bossNameEl = document.getElementById('mp-room-boss');
         if (bossNameEl) bossNameEl.textContent = room.boss.region + ' · ' + room.boss.name;
@@ -191,6 +227,7 @@ const MultiplayerUI = {
             readyBtn.textContent = me && me.ready ? '取消准备' : '准备';
             readyBtn.className = 'btn ' + (me && me.ready ? 'btn-danger' : 'btn-success');
             readyBtn.style.display = isHost ? 'none' : 'inline-block';
+            readyBtn.disabled = !me;
         }
 
         const startBtn = document.getElementById('btn-start-battle');

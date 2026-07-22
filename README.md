@@ -4,7 +4,7 @@
 
 ## 在线体验
 
-（部署到 GitHub Pages 后在此处添加链接）
+(https://ygh-7.github.io/Starry-Sky---Alien-Catastrophe/)
 
 ## 项目结构
 

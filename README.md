@@ -48,15 +48,6 @@ python -m http.server 8000
 
 然后在浏览器打开 `http://localhost:8000`。
 
-## 部署到 GitHub Pages
-
-1. 在 GitHub 创建一个新仓库。
-2. 将本项目所有文件推送到仓库根目录。
-3. 进入仓库 **Settings → Pages**。
-4. Source 选择 **Deploy from a branch**，分支选择 `main`（或 `master`），目录选择 `/ (root)`。
-5. 保存后等待几分钟，GitHub 会生成访问链接。
-
-> 注意：游戏存档使用浏览器 `localStorage`，不同域名下的存档不互通。
 
 ## 游戏玩法
 
@@ -119,23 +110,6 @@ python -m http.server 8000
 ### 启用联机
 
 联机基于 **MQTT 公共代理**实现，**无需注册任何账号**，国内可直接访问。
-
-1. 默认使用 EMQ X 国内节点，配置在 `js/mqtt-config.js` 中：
-
-```javascript
-const MQTT_CONFIG = {
-    brokerURL: 'wss://broker-cn.emqx.io:8084/mqtt',
-    topicPrefix: 'star_cultivation'
-};
-```
-
-2. 如果默认代理连接不上，可尝试以下备用地址（修改 `brokerURL` 即可）：
-   - `wss://broker.emqx.io:8084/mqtt`（国际节点）
-   - `wss://broker.hivemq.com:8884/mqtt`（HiveMQ）
-
-3. MQTT 库通过 jsDelivr 加载，国内访问通常稳定。如果加载失败，可手动把 `index.html` 里的 MQTT SDK 地址换成其他可用 CDN。
-4. 刷新页面，MQTT 库加载成功后「联机」面板不再显示黄色提示。
-
 > 这是一个纯前端 P2P（房主权威）方案：房主创建房间后，所有玩家通过 MQTT 主题收发消息，房主负责计算 BOSS 攻击和同步完整房间状态。房主掉线后房间会解散。
 
 ## 技术说明
